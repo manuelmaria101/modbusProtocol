@@ -15,7 +15,7 @@ port: port
 startAddr: first address to be read
 nReg: number of registers to be read
 data: value of registers*/
-int ReadHoldingRegisters(char *servAddr, uint16_t port, uint16_t startAddr, uint16_t nReg, uint8_t *data);
+int ReadHoldingRegisters(char *servAddr, uint16_t port, uint16_t startAddr, uint16_t nReg, uint16_t *data);
 
 /*returns number of registers written
 servAddr: server address
@@ -23,7 +23,7 @@ port: port
 startAddr: first address to be read
 nReg: number of registers to be read
 data: value of registers to be written*/
-int WriteMultipleRegisters(char *servAddr, uint16_t port, uint16_t startAddr, uint16_t nReg, uint8_t *data);
+int WriteMultipleRegisters(char *servAddr, uint16_t port, uint16_t startAddr, uint16_t nReg, uint16_t *data);
 
 /*-------------------------------------------------------Server--------------------------------------------------------*/
 
@@ -33,7 +33,7 @@ operation: returns operation requested by client
 startAddr: first address of operation
 nReg: number of registers to be operated
 data: only if client whats to write; it has the values for registers*/
-int getModbusRequest(int serverSocket, uint8_t *operation, uint16_t *startAddr, uint16_t *nReg, uint8_t *data);
+int getModbusRequest(int serverSocket, uint8_t *operation, uint16_t *startAddr, uint16_t *nReg, uint16_t *data);
 
 /*returns lenght of APDU_responde
 transactID: transaction identifier
@@ -41,6 +41,6 @@ operation: operation to be performed
 startAddr: first address of operation
 nReg: number of registers to be operated
 data: only if client whats to read; it has the values of holding registers*/
-int sendAPResponse(int trasactID, uint8_t operation, uint16_t startAddr, uint16_t nReg, uint8_t *data);
+int sendAPResponse(int trasactID, uint8_t operation, uint16_t startAddr, uint16_t nReg, uint16_t *data);
 
 int concatenate(int x, int y);

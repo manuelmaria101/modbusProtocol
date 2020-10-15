@@ -2,9 +2,8 @@
 #include "ModbusAP.h"
 
 int main(){
-    uint8_t data[PDU_SIZE];
     int nReg = 9;
-    uint8_t writeReg[nReg*2];
+    uint16_t data[PDU_SIZE], writeReg[nReg*2];
     uint16_t operation, startAdd;
     while(1){
         printf("Function code: (3) ou (10) ou (FF)\n");
@@ -17,8 +16,9 @@ int main(){
                 printf("number of registers: ");
                 scanf("%d", &nReg);
                 nReg = ReadHoldingRegisters("127.0.0.1", 502, startAdd, nReg, data);
+                printf("registers read: %d", nReg);
                 printf("data: ");
-                for(int i = 0; i < (nReg*2); i++){
+                for(int i = 0; i < (nReg); i++){
                     printf("[%d]", data[i]);
                 }
                 printf("\n");
@@ -33,9 +33,8 @@ int main(){
                 for(int i = startAdd; i < nReg + startAdd; i++){
                     printf("value for register %d: ", i);
                     scanf("%d", &aux);
-                    writeReg[j] = MSB(aux);
-                    writeReg[j+1] = LSB(aux);
-                    j+=2;
+                    writeReg[j] = aux;
+                    j++;
                 }
                 int nRegWrite = WriteMultipleRegisters("127.0.0.1", 502, startAdd, nReg, writeReg);
                 printf("\t\tnReg Written: %d\n", nRegWrite);

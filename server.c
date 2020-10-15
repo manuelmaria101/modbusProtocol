@@ -8,7 +8,6 @@
 #include "ModbusAP.h"
 #include "mmdriver.h"
 
-
 int serverConnect(char *serverAddr, int port)
 {
     int serverSocket = socket(PF_INET, SOCK_STREAM, 0);
@@ -30,8 +29,8 @@ int serverDisconnect(int serverSocket){
 
 int main(){
     int sock = serverConnect("127.0.0.1", 502);
-    uint8_t operation, data[PDU_SIZE];
-    uint16_t startAddr, nReg, check;
+    uint8_t operation;
+    uint16_t startAddr, nReg, check, data[PDU_SIZE];
     while(1){
         int transactId = getModbusRequest(sock, &operation, &startAddr, &nReg, data);
         printf("\nTransaction ID: %d\n\n", transactId);
@@ -40,9 +39,8 @@ int main(){
                 printf("\treceived data WRITE\n");
                 printf("\t\tst_ad = %d\tnr = %d\t", startAddr, nReg);
                 printf("data: ");
-                for(int i = 0; i < nReg*2; i++){
-                    printf("[%d%d]", data[i], data[i+1]);
-                    i++;
+                for(int i = 0; i < nReg; i++){
+                    printf("[%d]", data[i]);
                 }
                 printf("\n");
                 nReg = holdingRegisters_W(startAddr, nReg, data);
@@ -55,7 +53,6 @@ int main(){
                 check = sendAPResponse(transactId, operation, startAddr, nReg, data);
             }break;
             default: break;
-
             if(check == 0) 
                 printf("\nresponse sent sucessfully\n");
             else 

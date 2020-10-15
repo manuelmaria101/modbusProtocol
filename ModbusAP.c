@@ -5,13 +5,12 @@
 #include <arpa/inet.h>
 #include <string.h>
 #include <unistd.h>
-#include "ModbusTCP.h"
 #include "ModbusAP.h"
-#include "mmdriver.h"
+#include "ModbusTCP.h"
 
 /*-----------------------------------------------Client---------------------------------------------*/
 
-int ReadHoldingRegisters(char *servAddr, uint16_t port, uint16_t startAddr, uint16_t nReg, uint8_t *data)
+int ReadHoldingRegisters(char *servAddr, uint16_t port, uint16_t startAddr, uint16_t nReg, uint16_t *data)
 {
     printf("\nClient Read Multiple Registers\n");
     printf("\t\tst_ad = %d\tnr = %d\t", startAddr, nReg);
@@ -23,20 +22,18 @@ int ReadHoldingRegisters(char *servAddr, uint16_t port, uint16_t startAddr, uint
     APDU[3] = MSB(nReg);
     APDU[4] = LSB(nReg);
     int len = sendModbusRequest("127.0.0.1", port, APDU, 5, APDU_r);
-    memcpy(data, APDU_r + 2, len-2);
-    if(len < 0) return -1;
+    if(len != (2*nReg + 2)) return -1;
+    if(APDU_r[0] != READ_HOLDING_REG) return -2;
+    if(APDU_r[1] != nReg*2) return -3;
+    // memcpy(data, APDU_r + 2, len-2);
+   for(int i = 0; i < nReg; i++)
+        data[i] = 256*APDU_r[2 + 2*i] + APDU_r[2 + 2*i + 1];
     return (len - 2)/2;
 }
 
-int WriteMultipleRegisters(char *servAddr, uint16_t port, uint16_t startAddr, uint16_t nReg, uint8_t *data){
+int WriteMultipleRegisters(char *servAddr, uint16_t port, uint16_t startAddr, uint16_t nReg, uint16_t *data){
     printf("\nClient Write Multiple Registers\n");
     printf("\t\tst_ad = %d\tnr = %d\t", startAddr, nReg);
-    printf("data: ");
-    for(int i = 0; i < nReg*2; i++){
-        printf("[%d%d]", data[i], data[i+1]);
-        i++;
-    }
-    printf("\n");
     if(startAddr > NUMBEROFREG) return -1;
     if(startAddr + nReg - 1 > NUMBEROFREG) return -2;
     if(nReg > NUMBEROFREG) return -3;
@@ -51,45 +48,54 @@ int WriteMultipleRegisters(char *servAddr, uint16_t port, uint16_t startAddr, ui
     APDU[5] = len;
 
     int APDU_len = len + 6;
-    memcpy(APDU + 6, data, len);
-
+    for(int i = 0; i < nReg; i++){
+        APDU[6 + 2*i] = MSB(data[i]);
+        APDU[6 + 2*i +1] = LSB(data[i]);
+    }
     len = sendModbusRequest(servAddr, port, APDU, APDU_len, APDU_r);
-    if(len < 0) return -4;
-    return concatenate(APDU_r[len-2], APDU_r[len-1]);
+    if(len != 5) return -1;
+    if(APDU_r[0] !=  WRITE_MULTIPLE_REG) return -2;
+    if(APDU_r[1] != MSB(startAddr) || APDU_r[2] != LSB(startAddr)) return -3;
+    if(APDU_r[3] != MSB(nReg) || APDU_r[4] != LSB(nReg)) return -4;
+    return (256*APDU_r[len-2] + APDU_r[len-1]);
 }
 
 /*-----------------------------------------------------------Server----------------------------------------------------*/
 
 
-int getModbusRequest(int serverSocket, uint8_t *operation, uint16_t *startAddr, uint16_t *nReg, uint8_t *data){
+int getModbusRequest(int serverSocket, uint8_t *operation, uint16_t *startAddr, uint16_t *nReg, uint16_t *data){
     int APDUlen;
     uint8_t APDU[PDU_SIZE];
     int8_t transactID = receiveModbusRequest(serverSocket, APDU, APDUlen);
     *operation = APDU[0];
     switch(*operation){
         case WRITE_MULTIPLE_REG: {
-            *startAddr = concatenate(MSB(APDU[1]), LSB(APDU[2]));
-            *nReg = concatenate(MSB(APDU[3]), LSB(APDU[4]));
+            *startAddr = 256*APDU[1] + APDU[2];
+            *nReg = 256*APDU[3] + APDU[4];
             uint8_t len = APDU[5];
-            memcpy(data, APDU + 6, len);
+            for(int i = 0; i < *nReg; i++)
+                data[i] = 256*APDU[6 + 2*i] + APDU[6 + 2*i + 1];
         }break;
         case READ_HOLDING_REG:{
-            *startAddr = concatenate(MSB(APDU[1]), LSB(APDU[2]));
-            *nReg = concatenate(MSB(APDU[3]), LSB(APDU[4]));
+            *startAddr = 256*APDU[1] + APDU[2]; 
+            *nReg = 256*APDU[3] + APDU[4]; 
         }break;
         default: break;
     }
     return transactID;
 }
 
-int sendAPResponse(int trasactID, uint8_t operation, uint16_t startAddr, uint16_t nReg, uint8_t *data){
+int sendAPResponse(int trasactID, uint8_t operation, uint16_t startAddr, uint16_t nReg, uint16_t *data){
     int APDU_rlen;
     uint8_t APDU_r[PDU_SIZE];
     switch(operation){
         case READ_HOLDING_REG: {
             APDU_r[0] = READ_HOLDING_REG;
             APDU_r[1] = nReg*2;
-            memcpy(APDU_r + 2, data, nReg*2);
+            for(int i = 0; i < nReg; i++){
+                APDU_r[2 + 2*i] = MSB(data[i]);
+                APDU_r[2 + 2*i +1] = LSB(data[i]);
+            }
             APDU_rlen = nReg*2 + 2;
         }break;
         case WRITE_MULTIPLE_REG:{
@@ -104,14 +110,4 @@ int sendAPResponse(int trasactID, uint8_t operation, uint16_t startAddr, uint16_
     }
     APDU_rlen = sendModbusResponse(trasactID, APDU_r, APDU_rlen);
     return APDU_rlen;
-}
-
-
-/*----------------------------------------------------------------Auxiliar---------------------------------------*/
-
-int concatenate(int x, int y){
-    int pow = 10;
-    while(y >= pow)
-        pow *= 10;
-    return x * pow + y;
 }

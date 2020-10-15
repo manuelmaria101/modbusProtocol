@@ -1,34 +1,32 @@
 #include <stdio.h>
 #include "mmdriver.h"
-#include "ModbusAP.h"
 
-int holdReg[10];
+uint16_t holdReg[10];
 
-int holdingRegisters_R(uint16_t startAddr, uint16_t nReg, uint8_t *data){
+int holdingRegisters_R(uint16_t startAddr, uint16_t nReg, uint16_t *data){
     int i = 0;
     printf("\tReading Multiple Registers\n");
     printf("\t\tstartAddr: %d\tnReg: %d\n\t", startAddr, nReg);
     for(int j = startAddr; j < nReg + startAddr; j++){
-        data[i] = MSB((uint16_t)holdReg[j]);
-        data[i+1] = LSB((uint16_t)holdReg[j]);
-        i+=2;
+        data[i] = holdReg[j];
         printf("\treadHoldReg[%d] = %d", j, holdReg[j]);
+        i++;
     }
     printf("\n");
-    return i/2;
+    return i;
 }
 
 
-int holdingRegisters_W(uint16_t startAddr, uint16_t nReg, uint8_t *data){
+int holdingRegisters_W(uint16_t startAddr, uint16_t nReg, uint16_t *data){
     int i = 0;
     printf("\tWriting Multiple Registers\n");
     printf("\t\tstartAddr: %d\tnReg: %d\n\t", startAddr, nReg);
     for(int j = startAddr; j < nReg + startAddr; j++){
-        holdReg[j] = concatenate(data[i], data[i+1]);
+        holdReg[j] = data[i];
         printf("\tholdREG[%d] = %d", j, holdReg[j]);
-        i+=2;
+        i++;
     }
     printf("\n");
-    return i/2;
+    return i;
 }
 

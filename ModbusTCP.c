@@ -6,7 +6,6 @@
 #include <string.h>
 #include <unistd.h>
 #include "ModbusTCP.h"
-#include "mmdriver.h"
 #include "ModbusAP.h"
 
 
@@ -74,8 +73,8 @@ int receiveModbusRequest(int serverSocket, uint8_t *APDU, int APDUlen){
     int len = read(commsSocket, PDU_MBAP, 7);
     if(len != 7) return -1;
     uint8_t transactID;
-    transactID = concatenate(PDU_MBAP[0], PDU_MBAP[1]);
-    APDUlen = concatenate(PDU_MBAP[4], PDU_MBAP[5]);
+    transactID = 256*PDU_MBAP[0] + PDU_MBAP[1];
+    APDUlen = 256*PDU_MBAP[4] + PDU_MBAP[5];
     APDUlen -=1;
     len = read(commsSocket, APDU, APDUlen);
     if(len == -1) return -1;
