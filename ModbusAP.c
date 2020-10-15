@@ -31,7 +31,12 @@ int ReadHoldingRegisters(char *servAddr, uint16_t port, uint16_t startAddr, uint
 int WriteMultipleRegisters(char *servAddr, uint16_t port, uint16_t startAddr, uint16_t nReg, uint8_t *data){
     printf("\nClient Write Multiple Registers\n");
     printf("\t\tst_ad = %d\tnr = %d\t", startAddr, nReg);
-    printf("data: [%d%d][%d%d][%d%d]\n", data[0],data[1],data[2],data[3],data[4],data[5]);
+    printf("data: ");
+    for(int i = 0; i < nReg*2; i++){
+        printf("[%d%d]", data[i], data[i+1]);
+        i++;
+    }
+    printf("\n");
     if(startAddr > NUMBEROFREG) return -1;
     if(startAddr + nReg - 1 > NUMBEROFREG) return -2;
     if(nReg > NUMBEROFREG) return -3;
@@ -56,7 +61,7 @@ int WriteMultipleRegisters(char *servAddr, uint16_t port, uint16_t startAddr, ui
 /*-----------------------------------------------------------Server----------------------------------------------------*/
 
 
-int getModbusRequest(int serverSocket, uint8_t *operation, int *startAddr, int *nReg, uint8_t *data){
+int getModbusRequest(int serverSocket, uint8_t *operation, uint16_t *startAddr, uint16_t *nReg, uint8_t *data){
     int APDUlen;
     uint8_t APDU[PDU_SIZE];
     int8_t transactID = receiveModbusRequest(serverSocket, APDU, APDUlen);
@@ -77,7 +82,7 @@ int getModbusRequest(int serverSocket, uint8_t *operation, int *startAddr, int *
     return transactID;
 }
 
-int sendAPResponse(int trasactID, uint8_t operation, int startAddr, int nReg, uint8_t *data){
+int sendAPResponse(int trasactID, uint8_t operation, uint16_t startAddr, uint16_t nReg, uint8_t *data){
     int APDU_rlen;
     uint8_t APDU_r[PDU_SIZE];
     switch(operation){

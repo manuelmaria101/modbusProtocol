@@ -31,7 +31,7 @@ int serverDisconnect(int serverSocket){
 int main(){
     int sock = serverConnect("127.0.0.1", 502);
     uint8_t operation, data[PDU_SIZE];
-    int startAddr, nReg, check;
+    uint16_t startAddr, nReg, check;
     while(1){
         int transactId = getModbusRequest(sock, &operation, &startAddr, &nReg, data);
         printf("\nTransaction ID: %d\n\n", transactId);
@@ -39,7 +39,12 @@ int main(){
             case WRITE_MULTIPLE_REG: {
                 printf("\treceived data WRITE\n");
                 printf("\t\tst_ad = %d\tnr = %d\t", startAddr, nReg);
-                printf("data: [%d%d][%d%d][%d%d]\n", data[0],data[1],data[2],data[3],data[4],data[5]);
+                printf("data: ");
+                for(int i = 0; i < nReg*2; i++){
+                    printf("[%d%d]", data[i], data[i+1]);
+                    i++;
+                }
+                printf("\n");
                 nReg = holdingRegisters_W(startAddr, nReg, data);
                 check = sendAPResponse(transactId, operation, startAddr, nReg, data);
             }break;
