@@ -14,7 +14,11 @@ int ReadHoldingRegisters(char *servAddr, uint16_t port, uint16_t startAddr, uint
 {
     printf("\nClient Read Multiple Registers\n");
     printf("\t\tst_ad = %d\tnr = %d\t", startAddr, nReg);
-    if(startAddr > NUMBEROFREG) return -1;
+    if(startAddr < 1) return -1;
+    if(startAddr + nReg > 65537) return -2;
+    if(nReg > 125) return -3; // -> tabela 36.2 Modbus Chapter
+    startAddr--;
+
     uint8_t APDU[PDU_SIZE], APDU_r[PDU_SIZE];
     APDU[0] = READ_HOLDING_REG;
     APDU[1] = MSB(startAddr);
@@ -34,9 +38,10 @@ int ReadHoldingRegisters(char *servAddr, uint16_t port, uint16_t startAddr, uint
 int WriteMultipleRegisters(char *servAddr, uint16_t port, uint16_t startAddr, uint16_t nReg, uint16_t *data){
     printf("\nClient Write Multiple Registers\n");
     printf("\t\tst_ad = %d\tnr = %d\t", startAddr, nReg);
-    if(startAddr > NUMBEROFREG) return -1;
-    if(startAddr + nReg - 1 > NUMBEROFREG) return -2;
-    if(nReg > NUMBEROFREG) return -3;
+    if(startAddr < 1) return -1;
+    if(startAddr + nReg > 65537) return -2;
+    if(nReg > 123) return -3; // -> tabela 36.2 Modbus Chapter
+    startAddr--;
 
     uint8_t APDU[PDU_SIZE], APDU_r[PDU_SIZE];
     APDU[0] = WRITE_MULTIPLE_REG;
